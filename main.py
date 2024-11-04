@@ -65,11 +65,11 @@ def User_info(message):
     cursor2 = con.cursor()
     if message.chat.id == 1167883149:
         sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
-        cursor.execute(sqlite_select_query, (1167883149,))
+        cursor.execute(sqlite_select_query, (1167883149))
         records = cursor.fetchone()
         cursor2.execute(sqlite_select_query, (records[3],))
         records2 = cursor2.fetchone()
-        bot.send_message(1167883149, f'User:{records[0]}:\nFirst_name: {records2[1]}\nLast_name: {records2[2]}')
+        bot.send_message(1167883149, f'User:{records2[0]}:\nFirst_name: {records2[1]}\nLast_name: {records2[2]}')
         cursor.close()
         cursor2.close()
 @bot.message_handler(commands=['Doeb'])
