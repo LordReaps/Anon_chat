@@ -33,6 +33,18 @@ keyboard3 = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard3.add(KeyboardButton('/NonDoeb'))
 keyboard3.add(KeyboardButton('/User_info'))
 
+def Is_person_in_data(message, tg_id):
+    sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
+    cursor.execute(sqlite_select_query, (message.from_user.id,))
+    variants = cursor.fetchall()
+    if len(variants) == 0:
+        return 0;
+    else:
+        for row in variants:
+            if row[3] == 0:
+                return 1
+        return 2
+
 @bot.message_handler(commands=['start'])
 def start(message):
 
@@ -40,19 +52,13 @@ def start(message):
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
 
-    sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
-    cursor.execute(sqlite_select_query, (message.from_user.id,))
-    records = cursor.fetchall()
-    if len(records) == 0:
-        cursor.execute(f"INSERT INTO Users VALUES(?, ?, ?, ?)", (tg_id, first_name, last_name, 0))
-        con.commit()
-    else:
-        for row in records:
-            if row[3] == 0:
-                bot.send_message(message.chat.id, 'Привет, до кого доебемся сегодня?', reply_markup=keyboard)
-            else:
-                bot.send_message(message.chat.id, 'Похоже вы уже с кем-то общаетесь! Попробуйте написать что-нибудь', reply_markup=keyboard2)
-
+    person_alive = Is_person_in_data(message, tg_id)
+    match person_alive:
+        case 0: 
+            cursor.execute(f"INSERT INTO Users VALUES(?, ?, ?, ?)", (tg_id, first_name, last_name, 0))
+            con.commit()
+        case 1: bot.send_message(message.chat.id, 'Привет, до кого доебемся сегодня?', reply_markup=keyboard)
+        case 2: bot.send_message(message.chat.id, 'Похоже вы уже с кем-то общаетесь! Попробуйте написать что-нибудь', reply_markup=keyboard2)
 @bot.message_handler(commands= ['User_info'])
 def User_info(message):
     cursor = con.cursor()
