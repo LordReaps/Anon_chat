@@ -33,7 +33,7 @@ keyboard3 = ReplyKeyboardMarkup(resize_keyboard=True)
 keyboard3.add(KeyboardButton('/NonDoeb'))
 keyboard3.add(KeyboardButton('/User_info'))
 
-def Is_person_in_data(message, tg_id):
+def is_person_in_data(message, tg_id):
     sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
     cursor.execute(sqlite_select_query, (message.from_user.id,))
     variants = cursor.fetchall()
@@ -45,6 +45,22 @@ def Is_person_in_data(message, tg_id):
                 return 1
         return 2
 
+def partner_search(message, tg_id):
+    self_cursor = con.cursor()
+    partner_cursor = con.cursor()
+    sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
+
+    self_cursor.execute(sqlite_select_query, tg_id)
+    self = cursor.fetchone()
+
+    partner_cursor.execute(sqlite_select_query, self[3])
+    partner = partner_cursor.fetchone()
+    
+    self_cursor.close()
+    partner_cursor.close()
+    
+    return partner
+
 @bot.message_handler(commands=['start'])
 def start(message):
 
@@ -52,26 +68,22 @@ def start(message):
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
 
-    person_alive = Is_person_in_data(message, tg_id)
+    person_alive = is_person_in_data(message, tg_id)
     match person_alive:
         case 0: 
             cursor.execute(f"INSERT INTO Users VALUES(?, ?, ?, ?)", (tg_id, first_name, last_name, 0))
             con.commit()
         case 1: bot.send_message(message.chat.id, 'Привет, до кого доебемся сегодня?', reply_markup=keyboard)
         case 2: bot.send_message(message.chat.id, 'Похоже вы уже с кем-то общаетесь! Попробуйте написать что-нибудь', reply_markup=keyboard2)
+
 @bot.message_handler(commands= ['User_info'])
 def User_info(message):
-    cursor = con.cursor()
-    cursor2 = con.cursor()
     if message.chat.id == 1167883149:
-        sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
-        cursor.execute(sqlite_select_query, (1167883149))
-        records = cursor.fetchone()
-        cursor2.execute(sqlite_select_query, (records[3],))
-        records2 = cursor2.fetchone()
-        bot.send_message(1167883149, f'User:{records2[0]}:\nFirst_name: {records2[1]}\nLast_name: {records2[2]}')
-        cursor.close()
-        cursor2.close()
+        partner = partner_search(message, 1167883149)
+        bot.send_message(1167883149, f'User:{partner[0]}:\nFirst_name: {partner[1]}\nLast_name: {partner[2]}')
+    else:
+        bot.send_message(message.chat.id, 'Нельзя')
+
 @bot.message_handler(commands=['Doeb'])
 def Doeb(message):
     cursor = con.cursor()
