@@ -11,15 +11,12 @@ bot = telebot.TeleBot(token = bot_token)
 
 con = sqlite3.connect('Anonim.db', check_same_thread=False)
 cursor = con.cursor()
-cursor2 = con.cursor()
-
 cursor.execute('''CREATE TABLE IF NOT EXISTS Users(
     tg_id INTEGER,
     first_name TEXT,
     last_name TEXT,
     partner INTEGER
 )''')
-
 con.commit()
 
 keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -43,7 +40,9 @@ def is_person_in_data(message, tg_id):
         for row in variants:
             if row[3] == 0:
                 return 1
-        return 2
+            elif row[3] == 1:
+                return 2
+        return 3
 
 def partner_search(message, tg_id):
     self_cursor = con.cursor()
@@ -74,7 +73,8 @@ def start(message):
             cursor.execute(f"INSERT INTO Users VALUES(?, ?, ?, ?)", (tg_id, first_name, last_name, 0))
             con.commit()
         case 1: bot.send_message(message.chat.id, 'Привет, до кого доебемся сегодня?', reply_markup=keyboard)
-        case 2: bot.send_message(message.chat.id, 'Похоже вы уже с кем-то общаетесь! Попробуйте написать что-нибудь', reply_markup=keyboard2)
+        case 2: bot.send_message(message.chat.id, "Сейчас вы в поиске собеседника", reply_markup = keyboard2)
+        case 3: bot.send_message(message.chat.id, 'Похоже вы уже с кем-то общаетесь! Попробуйте написать что-нибудь', reply_markup=keyboard2)
 
 @bot.message_handler(commands= ['User_info'])
 def User_info(message):
@@ -86,29 +86,35 @@ def User_info(message):
 
 @bot.message_handler(commands=['Doeb'])
 def Doeb(message):
-    cursor = con.cursor()
+    
+    tg_id = message.from_user.id
+    person = is_person_in_data(message, tg_id)
+    match person:
+        case 3: 
+            bot.send_message(message.chat.id, "Вы уже общаетесь с кем-то! Напишите что-нибудь")
+            return 1
+        case 2: 
+            bot.send_message(message.chat.id, "Сейчас вы в поиске собеседника")
+            return 1
+
     sql_update_query = """Update Users set partner=? where tg_id=?"""
     self_data = (1, message.from_user.id)
     cursor.execute(sql_update_query, self_data)
     con.commit()
-    cursor.close()
 
     bot.send_message(message.chat.id, 'Идет процесс...')
-    cursor = con.cursor()
-    cursor.execute("SELECT count(*) from Users WHERE partner=1")  #делаем запрос на кол-во строк в таблице
+    cursor.execute("SELECT count(*) from Users WHERE partner=1")  #делаем запрос на кол-во строк в таблице с пользователями в поиске
     row_count = cursor.fetchone()
     count = row_count[0] - 1
-    cursor.close()
 
-    cursor = con.cursor()
-    Partner = cursor.execute('SELECT * FROM Users WHERE partner=1')
-    partners = Partner.fetchall()
-    if len(partners) >= 2:
-        Adil = 1
+
+    potential_partners = (cursor.execute('SELECT * FROM Users WHERE partner=1')).fetchall()
+    if len(potential_partners) >= 2:
+        Chet = 1
         Rand_partner = random.randint(1, count)
-        for y in partners:
+        for y in potential_partners:
             if y[0] != message.from_user.id:
-                if Adil == Rand_partner:
+                if Chet == Rand_partner:
                     sql_update_query = """Update Users set partner=? where tg_id=?"""
                     data = (message.from_user.id, y[0])
                     data2 = (y[0], message.from_user.id)
@@ -116,14 +122,14 @@ def Doeb(message):
                     con.commit()
                     cursor.execute(sql_update_query, data2)
                     con.commit()
-                    if message.chat.id == 1167883149: bot.send_message(message.chat.id, 'Соединение успешно установлено!', reply_markup=keyboard3)
+                    if message.from_user.id == 1167883149: bot.send_message(message.chat.id, 'Соединение успешно установлено!', reply_markup=keyboard3)
                     else: bot.send_message(message.chat.id, 'Соединение успешно установлено!', reply_markup=keyboard2)
                     if y[0] == 1167883149: bot.send_message(y[0], 'До вас кто-то доебался!!', reply_markup=keyboard3)
                     else: bot.send_message(y[0], 'До вас кто-то доебался!!', reply_markup=keyboard2)
 
                     break
                 else:
-                    Adil += 1
+                    Chet += 1
     else:
         bot.send_message(message.chat.id, 'Пока людей, готовых к общению нет:(\nМы свяжем вас, как только они появятся!!', reply_markup=keyboard2)
 
