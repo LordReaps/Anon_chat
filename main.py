@@ -50,7 +50,7 @@ def partner_search(message, tg_id):
     sqlite_select_query = """SELECT * from Users WHERE tg_id=?"""
 
     self_cursor.execute(sqlite_select_query, tg_id)
-    self = cursor.fetchone()
+    self = self_cursor.fetchone()
 
     partner_cursor.execute(sqlite_select_query, self[3])
     partner = partner_cursor.fetchone()
@@ -116,14 +116,17 @@ def Doeb(message):
             if y[0] != message.from_user.id:
                 if Chet == Rand_partner:
                     sql_update_query = """Update Users set partner=? where tg_id=?"""
-                    data = (message.from_user.id, y[0])
-                    data2 = (y[0], message.from_user.id)
+                    partner_id = y[0]
+                    person_id = message.from_user.id
+                    data = (person_id, partner_id)
+                    data2 = (partner_id, person_id)
                     cursor.execute(sql_update_query, data)
                     con.commit()
                     cursor.execute(sql_update_query, data2)
                     con.commit()
                     if message.from_user.id == 1167883149: bot.send_message(message.chat.id, 'Соединение успешно установлено!', reply_markup=keyboard3)
                     else: bot.send_message(message.chat.id, 'Соединение успешно установлено!', reply_markup=keyboard2)
+
                     if y[0] == 1167883149: bot.send_message(y[0], 'До вас кто-то доебался!!', reply_markup=keyboard3)
                     else: bot.send_message(y[0], 'До вас кто-то доебался!!', reply_markup=keyboard2)
 
@@ -135,18 +138,17 @@ def Doeb(message):
 
 @bot.message_handler(commands=['NonDoeb'])
 def NonDoeb(message):
-    cursor = con.cursor()
     cursor.execute('SELECT * FROM Users WHERE tg_id=?', (message.from_user.id,))
-    self_partner = cursor.fetchone()[3] #айди подключенного ко мне человека
+    partner_id = cursor.fetchone()[3] #айди подключенного ко мне человека
 
     bot.send_message(message.chat.id, 'Соединение успешно разорвано!', reply_markup=keyboard)
-    bot.send_message(self_partner, 'Ваш партнер разорвал соединение!', reply_markup=keyboard)
+    bot.send_message(partner_id, 'Ваш партнер разорвал соединение!', reply_markup=keyboard)
 
-    cursor.execute('SELECT * FROM Users WHERE tg_id=?', (self_partner, ))
+    cursor.execute('SELECT * FROM Users WHERE tg_id=?', (partner_id, ))
     sql_update_query = """Update Users set partner=? where tg_id=?"""
-    data_i = (0, message.from_user.id)
-    data_partner = (0, self_partner)
-    cursor.execute(sql_update_query, data_i)
+    data_person = (0, message.from_user.id)
+    data_partner = (0, partner_id)
+    cursor.execute(sql_update_query, data_person)
     con.commit()
     cursor.execute(sql_update_query, data_partner)
     con.commit()
